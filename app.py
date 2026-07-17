@@ -1,69 +1,89 @@
-import streamlit as st
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import joblib
 import re
 import string
 
-st.set_page_config(
-    page_title="Fake News Detection",
-    page_icon="📰",
-    layout="centered"
-)
+app = Flask(__name__)
+CORS(app)
 
-try:
-    model = joblib.load("models/fake_news_random_forest.pkl")
-    vectorizer = joblib.load("models/tfidf_vectorizer.pkl")
-except FileNotFoundError:
-    st.error("Model files not found. Please check the models folder.")
-    st.stop()
+# -----------------------------------
+# Load Model and Vectorizer
+# -----------------------------------
+
+model = joblib.load("models/fake_news_random_forest.pkl")
+vectorizer = joblib.load("models/tfidf_vectorizer.pkl")
+
+# -----------------------------------
+# Text Cleaning Function
+# -----------------------------------
 
 def clean_text(text):
     text = text.lower()
+
     text = re.sub(r"http\S+", "", text)
     text = re.sub(r"www\S+", "", text)
     text = re.sub(r"<.*?>", "", text)
     text = re.sub(r"\d+", "", text)
-    text = text.translate(str.maketrans("", "", string.punctuation))
+
+    text = text.translate(
+        str.maketrans("", "", string.punctuation)
+    )
+
     text = re.sub(r"\s+", " ", text).strip()
+
     return text
 
 
-st.title("📰 AI-Powered Fake News Detection")
+# -----------------------------------
+# Home Route
+# -----------------------------------
 
-st.write(
-    "Paste a news article below to predict whether it is **Real** or **Fake** using a trained Random Forest model."
-)
+@app.route("/")
+def home():
+    return jsonify({
+        "message": "Fake News Detection API is running."
+    })
 
-news = st.text_area(
-    "Enter News Article",
-    height=250,
-    placeholder="Paste the news article here..."
-)
 
-if st.button("Predict"):
+# -----------------------------------
+# Prediction Route
+# -----------------------------------
 
-    if news.strip() == "":
-        st.warning("Please enter a news article.")
+@app.route("/predict", methods=["POST"])
+def predict():
+
+    data = request.get_json()
+
+    if not data or "news" not in data:
+        return jsonify({
+            "error": "No news text provided."
+        }), 400
+
+    news = data["news"]
+
+    cleaned = clean_text(news)
+
+    vector = vectorizer.transform([cleaned])
+
+    prediction = model.predict(vector)[0]
+
+    confidence = float(model.predict_proba(vector).max() * 100)
+
+    if prediction == 1:
+        label = "Real News"
     else:
+        label = "Fake News"
 
-        cleaned = clean_text(news)
+    return jsonify({
+        "prediction": label,
+        "confidence": round(confidence, 2)
+    })
 
-        vector = vectorizer.transform([cleaned])
 
-        prediction = model.predict(vector)[0]
+# -----------------------------------
+# Run Flask
+# -----------------------------------
 
-        confidence = model.predict_proba(vector).max() * 100
-
-        st.divider()
-
-        st.subheader("Prediction")
-
-        if prediction == 1:
-            st.success("🟢 Real News")
-        else:
-            st.error("🔴 Fake News")
-
-        st.write(f"**Confidence:** {confidence:.2f}%")
-
-        st.divider()
-
-        st.caption("Model Used: Random Forest")
+if __name__ == "__main__":
+    app.run(debug=True)
