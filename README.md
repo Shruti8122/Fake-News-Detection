@@ -4,6 +4,15 @@ A full-stack machine learning application that classifies news articles as **Rea
 
 The project features a **React frontend**, a **Flask REST API backend**, and a trained machine learning model for real-time fake news detection.
 
+
+---
+
+## 🚀 Live Demo
+
+🔗 **Live Application:** https://fake-news-detection-steel.vercel.app/
+
+Experience the AI-powered Fake News Detection system through a modern React interface. Users can paste a news article, submit it for analysis, and receive an instant prediction along with the model's confidence score.
+
 ---
 
 ## 📖 Overview
