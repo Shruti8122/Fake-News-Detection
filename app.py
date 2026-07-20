@@ -7,16 +7,8 @@ import string
 app = Flask(__name__)
 CORS(app)
 
-# -----------------------------------
-# Load Model and Vectorizer
-# -----------------------------------
-
 model = joblib.load("models/fake_news_random_forest.pkl")
 vectorizer = joblib.load("models/tfidf_vectorizer.pkl")
-
-# -----------------------------------
-# Text Cleaning Function
-# -----------------------------------
 
 def clean_text(text):
     text = text.lower()
@@ -35,10 +27,6 @@ def clean_text(text):
     return text
 
 
-# -----------------------------------
-# Home Route
-# -----------------------------------
-
 @app.route("/")
 def home():
     return jsonify({
@@ -46,9 +34,6 @@ def home():
     })
 
 
-# -----------------------------------
-# Prediction Route
-# -----------------------------------
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -81,9 +66,8 @@ def predict():
     })
 
 
-# -----------------------------------
-# Run Flask
-# -----------------------------------
+import os
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
